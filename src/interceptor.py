@@ -1,11 +1,13 @@
 import json
 import os
+import logging
 
 class DNSInterceptor:
     def __init__(self):
         self.policy_file = os.path.join("config", "policies.json")
         self.rules = {}
         self.load_policies()
+        self.logger = logging.getLogger(__name__)
 
     def load_policies(self):
         self.rules.clear()
@@ -15,12 +17,11 @@ class DNSInterceptor:
                 for rule in data.get("rules", []):
                     domain = rule["domain"].lower().rstrip('.')
                     self.rules[domain] = rule
-            print(f"[+] Loaded {len(self.rules)} policy rules.")
+            self.logger.info(f"[+] Loaded {len(self.rules)} policy rules.")
         except FileNotFoundError:
-            print(f"[-] Warning: Policy file not found at {self.policy_file}")
+            self.logger.warning(f"[-] Warning: Policy file not found at {self.policy_file}")
         except json.JSONDecodeError:
-            print(f"[-] Error: Invalid JSON in {self.policy_file}")
-
+            self.logger.error(f"[-] Error: Invalid JSON in {self.policy_file}")
     def check_policy(self, qname):
         check_domain = qname.rstrip('.').lower()
         

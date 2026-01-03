@@ -1,24 +1,26 @@
 import json
 import os
 from dnslib import DNSRecord, RR, QTYPE, A, TXT, AAAA, PTR
+import logging
 
 class ZoneManager:
     def __init__(self, config):
         self.zone_file = os.path.join("config", "zones.json")
         self.zone_data = {}
         self.load_zones()
+        self.logger = logging.getLogger(__name__)
 
     def load_zones(self):
         try:
             with open(self.zone_file, 'r') as f:
                 data = json.load(f)
                 self.zone_data = {k.lower().rstrip('.') + '.': v for k, v in data.items()}
-            print(f"[+] Loaded {len(self.zone_data)} zones from {self.zone_file}")
+            self.logger.info(f"[+] Loaded {len(self.zone_data)} zones from {self.zone_file}")
         except FileNotFoundError:
-            print(f"[-] Warning: Zone file {self.zone_file} not found.")
+            self.logger.warning(f"[-] Warning: Zone file {self.zone_file} not found.")
             self.zone_data = {}
         except json.JSONDecodeError:
-            print(f"[-] Error: Invalid JSON in {self.zone_file}.")
+            self.logger.error(f"[-] Error: Invalid JSON in {self.zone_file}.")
 
     def get_record(self, qname, qtype_str):
         key = qname.lower()

@@ -1,12 +1,13 @@
 import time
 import threading
+import logging
 from dnslib import DNSRecord, RR, QTYPE
 
 class DNSCache:
     def __init__(self):
         self.cache = {}
         self.lock = threading.Lock()
-        
+        self.logger = logging.getLogger(__name__)
         self.cleaner_thread = threading.Thread(target=self._cleaner_loop, daemon=True)
         self.cleaner_thread.start()
 
@@ -16,10 +17,10 @@ class DNSCache:
             if key in self.cache:
                 entry = self.cache[key]
                 if time.time() < entry['expiry']:
-                    print(f"    [Cache] Hit for {qname} [{qtype}]")
+                    self.logger.info(f"    [Cache] Hit for {qname} [{qtype}]")
                     return entry['record']
                 else:
-                    print(f"    [Cache] Expired (on access): {qname}")
+                    self.logger.info(f"    [Cache] Expired (on access): {qname}")
                     del self.cache[key]
         return None
 
@@ -47,4 +48,4 @@ class DNSCache:
                         count += 1
                 
                 if count > 0:
-                    print(f"    [Cache Janitor] Purged {count} expired records")
+                    self.logger.info(f"    [Cache Janitor] Purged {count} expired records")

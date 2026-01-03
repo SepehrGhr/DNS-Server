@@ -1,5 +1,6 @@
 import socket
 from src.resolver import DNSResolver
+import logging
 
 class UDPServer:
     def __init__(self, host, port, config):
@@ -9,6 +10,7 @@ class UDPServer:
         self.sock = None
         self.running = False
         self.resolver = DNSResolver(config) 
+        self.logger = logging.getLogger(__name__)
 
     def start(self):
         try:
@@ -16,10 +18,10 @@ class UDPServer:
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.bind((self.host, self.port))
             self.running = True
-            print(f"[+] Server started on {self.host}:{self.port}")
+            self.logger.info(f"[+] Server started on {self.host}:{self.port}")
             self._listen_loop()
         except Exception as e:
-            print(f"[-] Error: {e}")
+            self.logger.error(f"[-] Error: {e}")
             self.stop()
 
     def _listen_loop(self):
@@ -30,7 +32,7 @@ class UDPServer:
             except KeyboardInterrupt:
                 self.stop()
             except Exception as e:
-                print(f"[-] Receive Error: {e}")
+                self.logger.error(f"[-] Receive Error: {e}")
 
     def handle_packet(self, data, addr):
         response_data = self.resolver.process_query(data, addr)
@@ -39,7 +41,7 @@ class UDPServer:
             try:
                 self.sock.sendto(response_data, addr)
             except Exception as e:
-                print(f"[-] Send Error: {e}")
+                self.logger.error(f"[-] Send Error: {e}")
 
     def stop(self):
         self.running = False
