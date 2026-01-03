@@ -1,6 +1,6 @@
 import json
 import os
-from dnslib import DNSRecord, RR, QTYPE, A, TXT, AAAA, PTR
+from dnslib import DNSRecord, RR, QTYPE, A, TXT, AAAA, PTR, CNAME
 import logging
 
 class ZoneManager:
@@ -39,5 +39,7 @@ class ZoneManager:
                     return RR(rname=qname, rtype=QTYPE.TXT, rclass=1, ttl=300, rdata=TXT(value))
                 elif qtype_str == 'PTR':
                     return RR(rname=qname, rtype=QTYPE.PTR, rclass=1, ttl=300, rdata=PTR(value))
+                elif qtype_str == 'CNAME': 
+                    return RR(rname=qname, rtype=QTYPE.CNAME, rclass=1, ttl=300, rdata=CNAME(value))
         
         return None
