@@ -1,6 +1,6 @@
 import json
 import os
-from dnslib import DNSRecord, RR, QTYPE, A, TXT, AAAA
+from dnslib import DNSRecord, RR, QTYPE, A, TXT, AAAA, PTR
 
 class ZoneManager:
     def __init__(self, config):
@@ -35,5 +35,7 @@ class ZoneManager:
                     return RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(value))
                 elif qtype_str == 'TXT':
                     return RR(rname=qname, rtype=QTYPE.TXT, rclass=1, ttl=300, rdata=TXT(value))
+                elif qtype_str == 'PTR':
+                    return RR(rname=qname, rtype=QTYPE.PTR, rclass=1, ttl=300, rdata=PTR(value))
         
         return None
