@@ -17,7 +17,8 @@ def main():
     
     server = UDPServer(
         host=config["host"],
-        port=config["port"]
+        port=config["port"],
+        config=config 
     )
     
     server.start()
