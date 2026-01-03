@@ -1,5 +1,5 @@
 import socket
-from dnslib import DNSRecord, RCODE, QTYPE, RR
+from dnslib import DNSRecord, RCODE, QTYPE, RR, PTR
 from src.zones import ZoneManager
 from src.cache import DNSCache  
 from src.interceptor import DNSInterceptor
@@ -41,7 +41,7 @@ class DNSResolver:
             if cached_rr:
                 reply.add_answer(cached_rr)
                 return reply.pack()
-
+            
             print(f"    -> [Forwarding] Asking {self.upstream_ip}...")
             response_data = self._forward_query(data)
             
@@ -49,9 +49,32 @@ class DNSResolver:
                 upstream_response = DNSRecord.parse(response_data)
                 if upstream_response.header.rcode == RCODE.NOERROR:
                     for rr in upstream_response.rr:
-                        if str(rr.rname) == qname and QTYPE[rr.rtype] == qtype_str:
-                            self.cache.add(qname, qtype_str, rr, ttl=60) 
+                        rname = str(rr.rname)
+                        rtype = QTYPE[rr.rtype]
+                        
+                        if rname == qname and rtype == qtype_str:
+                            self.cache.add(qname, qtype_str, rr, ttl=60)
                             print(f"    -> [Cache] Stored {qname}")
+
+                        if rtype == 'A':
+                            try:
+                                ip_str = str(rr.rdata)
+                                reversed_ip = ".".join(reversed(ip_str.split('.')))
+                                ptr_qname = f"{reversed_ip}.in-addr.arpa."
+                                
+                                ptr_rr = RR(
+                                    rname=ptr_qname,
+                                    rtype=QTYPE.PTR,
+                                    rclass=1,
+                                    ttl=60,
+                                    rdata=PTR(rname)
+                                )
+                                
+                                self.cache.add(ptr_qname, 'PTR', ptr_rr, ttl=60)
+                                print(f"    -> [Smart Cache] Learned Reverse: {ip_str} -> {rname}")
+                                
+                            except Exception as e:
+                                print(f"    [!] Auto-Reverse Error: {e}")
 
                 return response_data
             
