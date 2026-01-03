@@ -1,5 +1,6 @@
 import socket
 from dnslib import DNSRecord, RCODE, QTYPE, RR, PTR
+import logging
 from src.zones import ZoneManager
 from src.cache import DNSCache  
 from src.interceptor import DNSInterceptor
@@ -12,6 +13,7 @@ class DNSResolver:
         self.interceptor = DNSInterceptor()
         self.upstream_ip = config["upstream_dns"]
         self.upstream_port = config["upstream_port"]
+        self.logger = logging.getLogger(__name__)
 
     def process_query(self, data, addr):
         try:
@@ -20,20 +22,20 @@ class DNSResolver:
             qtype_int = request.q.qtype
             qtype_str = QTYPE[qtype_int]
             
-            print(f"[*] Query: {qname} [{qtype_str}] from {addr}")
+            self.logger.info(f"Query: {qname} [{qtype_str}] from {addr}")
 
             reply = request.reply()
 
             is_blocked, reason = self.interceptor.check_policy(qname)
             if is_blocked:
-                print(f"    -> [BLOCKED] Domain: {qname} | Reason: {reason}")
+                self.logger.warning(f"    -> [BLOCKED] Domain: {qname} | Reason: {reason}")
                 
                 reply.header.rcode = RCODE.REFUSED
                 return reply.pack()
             
             answer_rr = self.zonemanager.get_record(qname, qtype_str)
             if answer_rr:
-                print(f"    -> [Local Zone] Found")
+                self.logger.info(f"    -> [Local Zone] Found")
                 reply.add_answer(answer_rr)
                 return reply.pack()
 
@@ -42,7 +44,7 @@ class DNSResolver:
                 reply.add_answer(cached_rr)
                 return reply.pack()
             
-            print(f"    -> [Forwarding] Asking {self.upstream_ip}...")
+            self.logger.info(f"    -> [Forwarding] Asking {self.upstream_ip}...")
             response_data = self._forward_query(data)
             
             if response_data:
@@ -54,7 +56,7 @@ class DNSResolver:
                         
                         if rname == qname and rtype == qtype_str:
                             self.cache.add(qname, qtype_str, rr, ttl=60)
-                            print(f"    -> [Cache] Stored {qname}")
+                            self.logger.info(f"    -> [Cache] Stored {qname}")
 
                         if rtype == 'A':
                             try:
@@ -71,10 +73,10 @@ class DNSResolver:
                                 )
                                 
                                 self.cache.add(ptr_qname, 'PTR', ptr_rr, ttl=60)
-                                print(f"    -> [Smart Cache] Learned Reverse: {ip_str} -> {rname}")
+                                self.logger.info(f"    -> [Smart Cache] Learned Reverse: {ip_str} -> {rname}")
                                 
                             except Exception as e:
-                                print(f"    [!] Auto-Reverse Error: {e}")
+                                self.logger.error(f"    [!] Auto-Reverse Error: {e}")
 
                 return response_data
             
@@ -82,7 +84,7 @@ class DNSResolver:
             return reply.pack()
 
         except Exception as e:
-            print(f"[-] Resolver Error: {e}")
+            self.logger.error(f"[-] Resolver Error: {e}")
             return None
 
     def _forward_query(self, data):
@@ -96,6 +98,7 @@ class DNSResolver:
         except socket.timeout:
             return None
         except Exception:
+            self.logger.error(f"Forwarding Error: {e}")
             return None
         finally:
             if sock: sock.close()

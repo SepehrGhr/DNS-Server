@@ -1,6 +1,7 @@
 import json
 import os
 from src.server import UDPServer
+from src.logger import setup_logger 
 
 CONFIG_PATH = os.path.join("config", "server.conf.json")
 
@@ -15,10 +16,12 @@ def load_config():
 def main():
     config = load_config()
     
+    setup_logger(level=config.get("log_level", "INFO"))
+    
     server = UDPServer(
         host=config["host"],
         port=config["port"],
-        config=config 
+        config=config
     )
     
     server.start()
