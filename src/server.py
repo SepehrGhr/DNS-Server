@@ -1,6 +1,7 @@
 import socket
 from src.resolver import DNSResolver
 import logging
+import threading
 
 class UDPServer:
     def __init__(self, host, port, config):
@@ -28,20 +29,24 @@ class UDPServer:
         while self.running:
             try:
                 data, addr = self.sock.recvfrom(4096)
-                self.handle_packet(data, addr)
+                client_thread = threading.Thread(
+                    target=self.handle_packet,
+                    args=(data, addr)
+                )
+                client_thread.daemon = True 
+                client_thread.start()
             except KeyboardInterrupt:
                 self.stop()
             except Exception as e:
                 self.logger.error(f"[-] Receive Error: {e}")
 
     def handle_packet(self, data, addr):
-        response_data = self.resolver.process_query(data, addr)
-        
-        if response_data:
-            try:
+        try:
+            response_data = self.resolver.process_query(data, addr)
+            if response_data:
                 self.sock.sendto(response_data, addr)
-            except Exception as e:
-                self.logger.error(f"[-] Send Error: {e}")
+        except Exception as e:
+            self.logger.error(f"Handler Error: {e}")
 
     def stop(self):
         self.running = False
