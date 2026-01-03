@@ -8,12 +8,12 @@ from src.interceptor import DNSInterceptor
 class DNSResolver:
     def __init__(self, config):
         self.config = config
+        self.logger = logging.getLogger(__name__)
         self.zonemanager = ZoneManager(config)
         self.cache = DNSCache()
         self.interceptor = DNSInterceptor()
         self.upstream_ip = config["upstream_dns"]
         self.upstream_port = config["upstream_port"]
-        self.logger = logging.getLogger(__name__)
 
     def process_query(self, data, addr):
         try:
@@ -97,7 +97,7 @@ class DNSResolver:
             return response
         except socket.timeout:
             return None
-        except Exception:
+        except Exception as e:
             self.logger.error(f"Forwarding Error: {e}")
             return None
         finally:

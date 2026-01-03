@@ -10,8 +10,8 @@ class UDPServer:
         self.config = config
         self.sock = None
         self.running = False
-        self.resolver = DNSResolver(config) 
         self.logger = logging.getLogger(__name__)
+        self.resolver = DNSResolver(config) 
 
     def start(self):
         try:

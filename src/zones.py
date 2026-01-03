@@ -7,8 +7,8 @@ class ZoneManager:
     def __init__(self, config):
         self.zone_file = os.path.join("config", "zones.json")
         self.zone_data = {}
-        self.load_zones()
         self.logger = logging.getLogger(__name__)
+        self.load_zones()
 
     def load_zones(self):
         try:

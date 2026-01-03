@@ -6,8 +6,8 @@ class DNSInterceptor:
     def __init__(self):
         self.policy_file = os.path.join("config", "policies.json")
         self.rules = {}
-        self.load_policies()
         self.logger = logging.getLogger(__name__)
+        self.load_policies()
 
     def load_policies(self):
         self.rules.clear()
