@@ -2,12 +2,14 @@ import socket
 from dnslib import DNSRecord, RCODE, QTYPE, RR
 from src.zones import ZoneManager
 from src.cache import DNSCache  
+from src.interceptor import DNSInterceptor
 
 class DNSResolver:
     def __init__(self, config):
         self.config = config
         self.zonemanager = ZoneManager(config)
         self.cache = DNSCache()
+        self.interceptor = DNSInterceptor()
         self.upstream_ip = config["upstream_dns"]
         self.upstream_port = config["upstream_port"]
 
@@ -21,6 +23,13 @@ class DNSResolver:
             print(f"[*] Query: {qname} [{qtype_str}] from {addr}")
 
             reply = request.reply()
+
+            is_blocked, reason = self.interceptor.check_policy(qname)
+            if is_blocked:
+                print(f"    -> [BLOCKED] Domain: {qname} | Reason: {reason}")
+                
+                reply.header.rcode = RCODE.REFUSED
+                return reply.pack()
             
             answer_rr = self.zonemanager.get_record(qname, qtype_str)
             if answer_rr:
