@@ -1,0 +1,14 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python Bytecode
+__pycache__/
+*.pyc
+
+# Logs (Keep the folder, ignore the files)
+logs/*.log
+
+# OS Metadata
+.DS_Store
